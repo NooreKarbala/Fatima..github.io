@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noor e Karbala - Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&family=Amiri:wght@700&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #00b894; --dark: #006341; --bg: #f4f7f6; }
+        body { margin: 0; font-family: 'Poppins', sans-serif; background: var(--bg); color: #333; }
+        
+        .hero { 
+            height: 300px; 
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1000'); 
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+        }
+        .hero h1 { font-family: 'Amiri'; font-size: 3rem; margin: 0; cursor: pointer; text-shadow: 2px 4px 10px rgba(0,0,0,0.3); text-align: center; }
+
+        .main-container { background: white; border-radius: 40px 40px 0 0; margin-top: -40px; position: relative; padding: 40px 20px; box-shadow: 0 -15px 30px rgba(0,0,0,0.05); min-height: 50vh; }
+
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .emoji-box { width: 75px; height: 75px; border-radius: 22px; background: #e6faf5; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; }
+        .card span { margin-top: 10px; font-weight: 600; font-size: 0.8rem; text-align: center; }
+
+        /* Library Book Cards */
+        .book-card { background: white; border-radius: 25px; border: 1px solid #eee; margin-bottom: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.02); }
+        .book-img { width: 100%; height: 200px; object-fit: cover; background: #f0f0f0; }
+        .book-info { padding: 20px; }
+        .book-info h3 { margin: 0 0 5px 0; color: #333; }
+        .book-info p { margin: 0 0 15px 0; color: #777; font-size: 0.9rem; }
+
+        .dua-card { background: white; border-radius: 30px; padding: 25px; margin-bottom: 35px; border: 1px solid #eee; }
+        .ara-text { font-family: 'Amiri', serif; font-size: 2rem; line-height: 4.5rem; text-align: center; background: #f1f8e9; padding: 20px; border-radius: 20px; margin: 15px 0; direction: rtl; white-space: pre-line; }
+        .urd-text { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.3rem; text-align: right; line-height: 3.2rem; direction: rtl; margin-top: 25px; padding-top: 20px; border-top: 2px dashed #eee; white-space: pre-line; }
+        
+        .audio-player { margin: 10px 0 20px 0; background: #e8f5e9; padding: 12px; border-radius: 18px; }
+        audio { width: 100%; height: 40px; }
+
+        .btn-p { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+        .del-btn { background: #ff7675; color: white; border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+
+        #viewer, #library-viewer { position: fixed; inset: 0; background: white; z-index: 9000; padding: 15px; overflow-y: auto; display: none; }
+        .admin-view { position: fixed; inset: 0; background: #f8fafc; z-index: 10000; padding: 25px; overflow-y: auto; display: none; }
+        .admin-card { background: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; outline: none; box-sizing: border-box; }
+        .close-btn { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 10; font-size: 2.2rem; border: none; color: var(--primary); cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="home">
+        <div class="hero" id="hero-banner">
+            <h2 style="font-family: 'Amiri'; opacity: 0.9;">بِسْمِ اللہِ الرَّحْمٰنِ الرَّحِیْمِ</h2>
+            <h1 onclick="toggleAdmin()" id="hero-text">Noor e Karbala</h1>
+        </div>
+        <div class="main-container">
+            <div class="grid" id="folder-grid"></div>
+            <div style="margin-top:35px; background: linear-gradient(135deg, #00b894, #006341); color:white; padding:25px; border-radius:25px; cursor:pointer;" onclick="showLibrary()">
+                <h3 style="margin:0">📚 Digital Library</h3>
+                <p style="margin:5px 0 0 0; font-size:0.8rem; opacity:0.8;">Read & Manage PDF Books</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewer">
+        <button class="close-btn" onclick="closeViewer()">←</button>
+        <div id="content-list"></div>
+    </div>
+
+    <div id="library-viewer">
+        <button class="close-btn" onclick="closeLibrary()">←</button>
+        <h2 style="text-align:center;">Library</h2>
+        <div id="pdf-list"></div>
+    </div>
+
+    <div id="admin" class="admin-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Admin Control</h2>
+            <button onclick="toggleAdmin()" style="border:none; background:none; font-size:2rem;">✕</button>
+        </div>
+        <div class="admin-card">
+            <h3>🖼️ Banner Settings</h3>
+            <input type="text" id="b-text" placeholder="Banner Title">
+            <input type="text" id="b-url" placeholder="Banner Image URL">
+            <button class="btn-p" style="background:#fdcb6e; color:#2d3436" onclick="saveBanner()">Update Banner</button>
+        </div>
+        <div class="admin-card">
+            <h3>📁 Folder Manager</h3>
+            <input type="text" id="f-name" placeholder="Folder Name">
+            <input type="text" id="f-emoji" placeholder="Emoji">
+            <button class="btn-p" onclick="saveFolder()">Save Folder</button>
+            <div id="admin-folders" style="margin-top:15px;"></div>
+        </div>
+        <div class="admin-card">
+            <h3>📝 Add Dua & Audio</h3>
+            <select id="f-select"></select>
+            <input type="text" id="c-title" placeholder="Dua Title">
+            <textarea id="c-ara" placeholder="Arabic Text" rows="4"></textarea>
+            <textarea id="c-urd" placeholder="Urdu Translation" rows="4"></textarea>
+            <input type="text" id="c-audio" placeholder="Audio Link (Direct MP3 URL)">
+            <button class="btn-p" style="background:#0984e3" onclick="saveContent()">Add Content</button>
+        </div>
+        <div class="admin-card">
+            <h3>📚 Book Manager (PDF)</h3>
+            <input type="text" id="p-title" placeholder="Book Title">
+            <input type="text" id="p-author" placeholder="Author">
+            <input type="text" id="p-cover" placeholder="Cover URL">
+            <input type="text" id="p-link" placeholder="PDF Direct Link">
+            <button class="btn-p" style="background:#6c5ce7" onclick="savePDF()">Add Book</button>
+            <div id="admin-pdfs" style="margin-top:15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8oEauMFRHg-VoDFUhgka2Q7AbLOtdBPc",
+            authDomain: "karbala-2fcca.firebaseapp.com",
+            databaseURL: "https://karbala-2fcca-default-rtdb.firebaseio.com",
+            projectId: "karbala-2fcca",
+            storageBucket: "karbala-2fcca.appspot.com",
+            appId: "1:407029541851:web:146422e6ed193cfbaf15fe"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function toggleAdmin() {
+            const el = document.getElementById('admin');
+            if(el.style.display === 'block') el.style.display = 'none';
+            else if(prompt("Key?") === "karbala786") el.style.display = 'block';
+        }
+
+        function saveBanner() {
+            const txt = document.getElementById('b-text').value;
+            const img = document.getElementById('b-url').value;
+            db.ref('settings/banner').set({ text: txt, url: img }).then(()=>alert("Updated!"));
+        }
+
+        db.ref('settings/banner').on('value', snap => {
+            const data = snap.val();
+            if(data) {
+                if(data.text) document.getElementById('hero-text').innerText = data.text;
+                if(data.url) document.getElementById('hero-banner').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('${data.url}')`;
+            }
+        });
+
+        function saveFolder() { const n=document.getElementById('f-name').value, e=document.getElementById('f-emoji').value; if(n&&e) db.ref('folders').push({name:n, emoji:e}); }
+        function saveContent() { 
+            const fid=document.getElementById('f-select').value, t=document.getElementById('c-title').value, a=document.getElementById('c-ara').value, u=document.getElementById('c-urd').value, aud=document.getElementById('c-audio').value; 
+            if(fid&&t) db.ref('content/'+fid).push({title:t, ara:a, urd:u, audio:aud}).then(()=>alert("Added!")); 
+        }
+        function savePDF() { 
+            const t=document.getElementById('p-title').value, a=document.getElementById('p-author').value, c=document.getElementById('p-cover').value, l=document.getElementById('p-link').value; 
+            if(t&&l) db.ref('pdfs').push({title:t, author:a, cover:c, link:l}).then(()=>alert("Book Saved!")); 
+        }
+        function del(p) { if(confirm("Delete?")) db.ref(p).remove(); }
+
+        db.ref('folders').on('value', snap => {
+            const grid=document.getElementById('folder-grid'), sel=document.getElementById('f-select'), adm=document.getElementById('admin-folders');
+            grid.innerHTML=""; sel.innerHTML="<option value=''>Select Folder</option>"; adm.innerHTML="";
+            snap.forEach(child => {
+                const f = child.val();
+                grid.innerHTML += `<div class="card" onclick="openFolder('${child.key}','${f.name}')"><div class="emoji-box">${f.emoji}</div><span>${f.name}</span></div>`;
+                sel.innerHTML += `<option value="${child.key}">${f.name}</option>`;
+                adm.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>${f.name}</span><button class="del-btn" onclick="del('folders/${child.key}')">✕</button></div>`;
+            });
+        });
+
+        function openFolder(id, name) {
+            document.getElementById('viewer').style.display='block';
+            db.ref('content/'+id).on('value', snap => {
+                const list = document.getElementById('content-list');
+                list.innerHTML = `<h2 style="text-align:center; color:var(--dark); font-family:'Amiri';">${name}</h2>`;
+                snap.forEach(child => {
+                    const c = child.val();
+                    let audioHtml = c.audio ? `<div class="audio-player"><audio controls src="${c.audio}"></audio></div>` : '';
+                    list.innerHTML += `<div class="dua-card"><h3>${c.title}</h3>${audioHtml}<div class="ara-text">${c.ara}</div><div class="urd-text">${c.urd}</div></div>`;
+                });
+            });
+        }
+
+        function showLibrary() {
+            document.getElementById('library-viewer').style.display='block';
+            db.ref('pdfs').on('value', snap => {
+                const list=document.getElementById('pdf-list'), adm=document.getElementById('admin-pdfs');
+                list.innerHTML=""; adm.innerHTML="";
+                snap.forEach(child => {
+                    const b = child.val();
+                    list.innerHTML += `
+                        <div class="book-card">
+                            <img src="${b.cover || 'https://via.placeholder.com/150'}" class="book-img">
+                            <div class="book-info">
+                                <h3>${b.title}</h3>
+                                <p>By: ${b.author}</p>
+                                <button class="btn-p" onclick="window.open('${b.link}', '_blank')">READ PDF</button>
+                            </div>
+                        </div>`;
+                    adm.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>${b.title}</span><button class="del-btn" onclick="del('pdfs/${child.key}')">✕</button></div>`;
+                });
+            });
+        }
+
+        function closeViewer() { document.getElementById('viewer').style.display='none'; }
+        function closeLibrary() { document.getElementById('library-viewer').style.display='none'; }
+    </script>
+</body>
+</html>
